@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 from nba_api.stats.endpoints import leaguegamefinder
 
@@ -27,5 +28,24 @@ def fetch_nba_games(seasons, season_type='Regular Season', sleep_time=1.0):
         time.sleep(sleep_time)  # Sleep to avoid hitting API rate limits
     
     games = pd.concat(all_games, ignore_index=True)
+
+    games["GAME_DATE"] = pd.to_datetime(games["GAME_DATE"])
+    games["is_home"] = games["MATCHUP"].str.contains("vs.").astype(int)
+    games["opp_abbr"] = games["MATCHUP"].str[-3:]
+    games["team_win"] = (games["WL"] == "W").astype(int)
+    games["point_diff"] = games["PLUS_MINUS"]
+
+    return games
+
+if __name__ == "__main__":
+    seasons = ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25"]
+
+    games = fetch_nba_games(seasons)
+
+    Path("data").mkdir(exist_ok=True, parents=True)
+    games.to_csv("data/nba_team_game_logs.csv", index=False)
+
+    print(games.head())
+    print(games.shape)
 
     
